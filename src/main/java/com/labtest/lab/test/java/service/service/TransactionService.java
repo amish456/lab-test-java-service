@@ -1,5 +1,6 @@
 package com.labtest.lab.test.java.service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.labtest.lab.test.java.service.entity.Transaction;
 import com.labtest.lab.test.java.service.entity.TransactionSummary;
 import com.labtest.lab.test.java.service.repository.TransactionRepository;
@@ -16,6 +17,9 @@ public class TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
 
     public TransactionSummary getLast24HoursSummary() {
         LocalDateTime now = LocalDateTime.now();
@@ -36,7 +40,24 @@ public class TransactionService {
     }
 
     public Transaction addTransaction(Transaction transaction) {
-        transaction.setTimestamp(LocalDateTime.now());
-        return transactionRepository.save(transaction);
+
+        Transaction response = new Transaction();
+
+        try {
+            transaction.setTimestamp(LocalDateTime.now());
+            response = transactionRepository.save(transaction);
+            ObjectMapper objectMapper = new ObjectMapper();
+            String event = objectMapper.writeValueAsString(response);
+
+            kafkaProducerService.sendTransaction(response.getTransactionType(), event);
+
+            log.info("Transaction happened successfully data : {}", transaction);
+
+        } catch (Exception e) {
+
+            log.error("Error while transaction: {}", e.getMessage());
+
+        }
+        return response;
     }
 }

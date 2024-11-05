@@ -1,5 +1,6 @@
 package com.labtest.lab.test.java.service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.labtest.lab.test.java.service.entity.Media;
 import com.labtest.lab.test.java.service.exception.MediaNotFoundException;
 import com.labtest.lab.test.java.service.repository.MediaRepository;
@@ -23,6 +24,9 @@ public class MediaService {
     @Autowired
     private MediaRepository mediaRepository;
 
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
+
     public Resource downloadMedia(LocalDateTime startTime, LocalDateTime endTime) {
         List<Media> mediaFiles = mediaRepository.findByStartTimeBetween(startTime, endTime);
 
@@ -36,14 +40,25 @@ public class MediaService {
     }
 
     public Media addMedia(Media media) {
-        media.setStartTime(LocalDateTime.now());
-        if (media.getDuration() > 0) {
-            media.setEndTime(media.getStartTime().plusSeconds(media.getDuration()));
-        } else {
-            media.setEndTime(media.getStartTime());
-        }
 
-        return mediaRepository.save(media);
+        Media response = new Media();
+
+        try {
+            media.setStartTime(LocalDateTime.now());
+            if (media.getDuration() > 0) {
+                media.setEndTime(media.getStartTime().plusSeconds(media.getDuration()));
+            } else {
+                media.setEndTime(media.getStartTime());
+            }
+            response = mediaRepository.save(media);
+            ObjectMapper ob = new ObjectMapper();
+            String event = ob.writeValueAsString(response);
+            kafkaProducerService.sendLog(event);
+            log.info("Media added successfully: {}", media);
+        } catch (Exception e) {
+            log.error("Error in logging media evidence: {}", e.getMessage());
+        }
+        return response;
 
     }
 }
