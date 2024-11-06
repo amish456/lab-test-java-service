@@ -8,12 +8,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/transactions")
+@RequestMapping("/api/transactions")
 @Tag(name = "Transactions", description = "Operations related to customer transactions")
 public class TransactionController {
 
@@ -35,6 +36,7 @@ public class TransactionController {
     }
 
     @PostMapping("/add")
+    @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Transaction> addTransactionLog(@RequestBody Transaction transaction) {
         Transaction savedTransaction = transactionService.addTransaction(transaction);
         return new ResponseEntity<>(savedTransaction, HttpStatus.CREATED);

@@ -11,13 +11,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/media")
+@RequestMapping("/api/media")
 @Tag(name = "Media", description = "Operations Related to Media Logs")
 public class MediaController {
 
@@ -36,6 +37,7 @@ public class MediaController {
 
     @PostMapping("/add")
     @Operation(summary = "Add new media logs.", description = "Add new media logs.")
+    @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Media> addMediaLog(@RequestBody Media media) {
         Media savedMedia = mediaService.addMedia(media);
         return new ResponseEntity<>(savedMedia, HttpStatus.CREATED);
